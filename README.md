@@ -143,13 +143,13 @@ cd preprocessor-sample
 mvn clean package
 ```
 
-执行编译后可在 `target` 目录下找到 `ext-processor-sample-0.1.jar`。
+执行编译后可在 `target` 目录下找到 `preprocessor-sample-1.0-SNAPSHOT.jar`。
 
 ## 4. 测试 JAR
 
 preprocessor-tools 使用用于测试、部署预处理模块的工具，只能运行于部署 Sensors Analytics 的机器上。
 
-将编译出的 JAR 文件上传到部署 Sensors Analytics 的机器上，例如 `preprocessor-sample-0.1.jar`。
+将编译出的 JAR 文件上传到部署 Sensors Analytics 的机器上，例如 `preprocessor-sample-1.0-SNAPSHOT.jar`。
 
 切换到`sa_cluster`账户:
 
@@ -182,41 +182,40 @@ Usage: <main class> [options] [command] [command options]
           -o, --order
             新的预处理模块处理顺序，填写预处理模块 id 列表，以逗号隔开
 
-    upload      上传预处理 JAR 包
-      Usage: upload [options]
-        Options:
-        * -p, --path
-            要上传 JAR 的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
-
     install      安装预处理
       Usage: install [options]
         Options:
           -c, --class
-            实现预处理的类名,可以填写多个类名(以逗号隔开)
+            实现预处理的类全名,可以填写多个类名(以逗号隔开)
+          -p, --path
+            要上传 JAR 的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
 
     run      运行指定的预处理方法, 以标准输入的逐行数据作为参数输入, 将返回结果输出到标准输出
       Usage: run [options]
         Options:
-        * -j, --jar
+        * -p, --path
             包含预处理的 JAR 的位置
+          -c, --class
+            实现预处理的类全名,可以填写多个类名(以逗号隔开),若不填写，则使用已经安装神策的预处理类
 
     run_with_real_time_data      用本机实时的数据作为输入, 将返回结果输出到标准输出
       Usage: run_with_real_time_data [options]
         Options:
-        * -j, --jar
+        * -p, --path
             包含预处理的 JAR 的位置
+          -c, --class
+            实现预处理的类全名,可以填写多个类名(以逗号隔开),若不填写，则使用已经安装神策的预处理类
 
     uninstall      卸载预处理
       Usage: uninstall [options]
         Options:
           -c, --class
-            实现预处理的类名,可以填写多个类名(以逗号隔开)
+            实现预处理的类全名,可以填写多个类名(以逗号隔开)
           -i, --id
             预处理 id 列表, 多个 id 请以逗号隔开
           -j, --with_jar
             并且删除之前上传 JAR 包
             Default: false
-
 ```
 
 ### 4.1  测试运行
@@ -226,8 +225,8 @@ Usage: <main class> [options] [command] [command options]
 ```
 ~/sa/extractor/bin/preprocessor-tools
 	run \
-    --jar preprocessor_jar_dir/
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2 \
+    --path preprocessor_jar_dir/
+    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
 ```
 
 ### 4.2 以线上实时数据测试运行
@@ -237,7 +236,7 @@ Usage: <main class> [options] [command] [command options]
 ```
 ~/sa/extractor/bin/preprocessor-tools
 	run_with_real_time_data \
-    --jar preprocessor_jar_dir/
+    --path preprocessor_jar_dir/
     --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
 ```
 
@@ -245,24 +244,16 @@ Usage: <main class> [options] [command] [command options]
 
 安装分为两步，首先需要将打包后生成的 JAR 包安装到神策服务器中，然后需要将所有编写的预处理模块 Class 名称配置存储神策服务器中。
 
-使用 preprocessor-tools 的`upload`方法可以上传打包后的 JAR 包。可以执行如下命令：
-
-```
-~/sa/extractor/bin/preprocessor-tools
-    upload \
-    --path preprocessor_jar_dir/ \
-```
-
-* 每次上传会将之前上传的所有的 JAR 包清理掉，因此如果有多个 JAR 包需要上传，请将这些 JAR 包放到一个目录里，通过指定目录将他们上传
-
-使用 preprocessor-tools 的`install`方法可以将每一个预处理模块的主类安装到神策中，可以执行如下命令:
+使用 preprocessor-tools 的`install`方法可以上传打包后的 JAR 包并且可以将每一个预处理模块的主类安装到神策。示例命令如下：
 
 ```
 ~/sa/extractor/bin/preprocessor-tools
     install \
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2 \
+    --path preprocessor_jar_dir/ \
+    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2 
 ```
 
+* 每次上传会将之前上传的所有的 JAR 包清理掉，因此如果有多个 JAR 包需要上传，请将这些 JAR 包放到一个目录里，通过指定目录将他们上传
 *  建议先上传 JAR 包，再安装这些预处理类
 *  集群版安装预处理模块会自动分发，不需要每台机器操作;
 
