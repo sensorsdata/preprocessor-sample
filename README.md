@@ -341,3 +341,10 @@ Usage: <main class> [options] [command] [command options]
 ```
 
 -   若希望更新 JAR 包，请直接使用工具“安装”新的 JAR 包即可，不需要先进行卸载;
+
+如果想要清空之前上传的 JAR 包，可以执行如下命令:
+```
+~/sa/extractor/bin/preprocessor-tools
+    uninstall \
+    --with_jar
+```
