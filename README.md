@@ -160,7 +160,7 @@ sudo su - sa_cluster
 直接运行 preprocessor-tools 将输出参数列表如：
 
 ```
-~/sa/extractor/bin/preprocessor-tools
+[sa_cluster@sensors-server ~]$ spadmin preprocessor
 Usage: <main class> [options] [command] [command options]
   Options:
     -h, --help
@@ -223,7 +223,7 @@ Usage: <main class> [options] [command] [command options]
 使用`run`方法加在 JAR 并实例化 Class，以标准输入的逐行数据作为预处理函数的输入，并将处理结果输出到标准输出。其中 -c, --class 为可选参数，若不填写，默认使用之前通过`install`安装的所有预处理模块进行处理；否则，会使用 -c 中传输的 class list 作为预处理模块，处理顺序与填写时顺序相同。
 
 ```
-~/sa/extractor/bin/preprocessor-tools
+spadmin preprocessor \
 	run \
     --path preprocessor_jar_dir/
     --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
@@ -234,7 +234,7 @@ Usage: <main class> [options] [command] [command options]
 使用方法与`run`方法相同，均需要提供 JAR 包的地址与所有需要测试的预处理的 Class。与`run`方法不同的是，`run_with_real_time_data`的输入数据真实的环境中的线上数据，并且最后会将输入与输出都输出到标准输出中。
 
 ```
-~/sa/extractor/bin/preprocessor-tools
+spadmin preprocessor \
 	run_with_real_time_data \
     --path preprocessor_jar_dir/
     --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
@@ -247,7 +247,7 @@ Usage: <main class> [options] [command] [command options]
 使用 preprocessor-tools 的`install`方法可以上传打包后的 JAR 包并且可以将每一个预处理模块的主类安装到神策。示例命令如下：
 
 ```
-~/sa/extractor/bin/preprocessor-tools
+spadmin preprocessor \
     install \
     --path preprocessor_jar_dir/ \
     --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2 
@@ -262,7 +262,7 @@ Usage: <main class> [options] [command] [command options]
 在新的预处理模块的模式中，多个预处理模块会按照一定顺序对日志进行处理，并且每个预处理模块一次会批量处理一批数据。可以通过 preprocessor-tools 的`info`方法查看所有预处理模块的细节，可以执行如下命令：
 
 ```
-~/sa/extractor/bin/preprocessor-tools info
+spadmin preprocessor info
 ```
 
 输出的日志的关键部分如下：
@@ -290,7 +290,7 @@ Usage: <main class> [options] [command] [command options]
 * 如果要修改某个预处理模块的一次处理的最大条数时：
 
     ```
-    ~/sa/extractor/bin/preprocessor-tools
+    spadmin preprocessor \
         modify \
         --id 1 \
         --amount 50
@@ -301,7 +301,7 @@ Usage: <main class> [options] [command] [command options]
 *  如果要修改某一些预处理模块的最长等待时间时:
 
     ```
-    ~/sa/extractor/bin/preprocessor-tools
+    spadmin preprocessor \
         modify \
         --id 1,2 \
         --timeout 3
@@ -312,9 +312,9 @@ Usage: <main class> [options] [command] [command options]
 *    如果要修改预处理模块处理属性时，直接指定新的预处理排序即可：
 
      ```
-     ~/sa/extractor/bin/preprocessor-tools
+     spadmin preprocessor \
          modify \
-         --reorder 2,1
+         --order 2,1
      ```
 
      修改之后，数据会先通过 id 为 2 的预处理模块处理之后，才由 id 为 2 的预处理模块儿处理。
@@ -335,7 +335,7 @@ Usage: <main class> [options] [command] [command options]
 若不再需要预处理模块，可以通过 ext-processor-utils 的 `uninstall` 方法卸载，执行如下命令：
 
 ```
-~/sa/extractor/bin/preprocessor-tools
+spadmin preprocessor \
     uninstall \
     --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
 ```
@@ -344,7 +344,7 @@ Usage: <main class> [options] [command] [command options]
 
 如果想要清空之前上传的 JAR 包，可以执行如下命令:
 ```
-~/sa/extractor/bin/preprocessor-tools
+spadmin preprocessor \
     uninstall \
     --with_jar
 ```
