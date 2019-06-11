@@ -46,6 +46,8 @@ Sensors Analytics 从 1.14 开始为用户提供新版本的"数据预处理模�
 
 ## 2.开发方法
 
+如果您是由 1.13 迁移过来的，可以参考。[旧版预处理升级指南](https://github.com/sensorsdata/preprocessor-sample/blob/master/PreviousUserGuidance.md)
+
 相比之前版本提供的预处理模块，新版本的预处理模块提供了批量处理的能力，并且可以支持添加多个预处理模块。因此，新版本的预处理接口相比之前较为复杂。一个预处理模块需要使用到两个 Java 接口`com.sensorsdata.analytics.extractor.common.RecordHandler`与`com.sensorsdata.analytics.extractor.processor.BatchProcessor`。这两个接口的定义如下
 
 RecordHandler.java
@@ -164,7 +166,8 @@ sudo su - sa_cluster
 Usage: <main class> [options] [command] [command options]
   Options:
     -h, --help
-      帮助
+      帮助，（具体可参见 https://github.com/sensorsdata/preprocessor-sample，如果您在 1.14 
+      之前的版本配置过预处理，请务必查看该文档） 
       Default: false
   Commands:
     info      查看所有安装的预处理
@@ -174,21 +177,40 @@ Usage: <main class> [options] [command] [command options]
       Usage: modify [options]
         Options:
           -i, --id
-            进行配置的预处理 id 列表, 多个 id 请以逗号隔开
+            进行配置的预处理 id 列表, 多个 id 请以逗号隔开。只有在指定了 --amount/-a 或 --timeout/-t 
+            时，才需要指定该参数 
           -a, --amount
-            预处理模块一次处理中数据的最多的条数
+            预处理模块一次处理中数据的最多的条数，请通过 --id/-i 参数指定要修改的预处理
           -t, --timeout
-            将数据交给下一个预处理的最长等待时间（单位为秒）
+            将数据交给下一个预处理的最长等待时间（单位为秒），请通过 --id/-i 参数指定要修改的预处理
           -o, --order
-            新的预处理模块处理顺序，填写预处理模块 id 列表，以逗号隔开
+            新的预处理模块处理顺序，填写预处理模块 id 列表，以逗号隔开。请填写上所有预处理模块的 id
+          -p, --path
+            要更新的 JAR 包的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
 
     install      安装预处理
       Usage: install [options]
         Options:
           -c, --class
-            实现预处理的类全名,可以填写多个类名(以逗号隔开)
-          -p, --path
+            添加新的预处理。填写类的全名，可以填写多个，请以逗号隔开。如果只是更新 JAR 包而类名不变，请勿指定该参数
+        * -p, --path
             要上传 JAR 的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
+        * --when_exception_use_original
+            当 ExtProcessor 抛异常时导入原始数据而不是直接抛弃, yes 表示预处理遇到异常时使用原始数据导入, no 
+            表示遇到异常时抛弃该条数据 
+            Possible Values: [YES, NO]
+        * --add_in_track_signup
+            是否将预处理应用于 track signup 的单独处理流中. yes 表示在打开 track signup 
+            的处理流的前提下，会同时将预处理的内容也添加到 track signup 流中, no 表示在 track signup 
+            流中不进行预处理。如果您的预处理会影响到 track_signup 的结果（例如，会修改 distinct_id 
+            等），请务必打开此开关 
+            Possible Values: [YES, NO]
+          --install-old-preprocessor
+            安装旧版本的预处理
+            Default: false
+          --with-extractor-stop
+            在卸载预处理模块后，不自动启动 Extractor
+            Default: false
 
     run      运行指定的预处理方法, 以标准输入的逐行数据作为参数输入, 将返回结果输出到标准输出
       Usage: run [options]
@@ -205,6 +227,10 @@ Usage: <main class> [options] [command] [command options]
             包含预处理的 JAR 的位置
           -c, --class
             实现预处理的类全名,可以填写多个类名(以逗号隔开),若不填写，则使用已经安装神策的预处理类
+        * --when_exception_use_original
+            当 ExtProcessor 抛异常时导入原始数据而不是直接抛弃, yes 表示预处理遇到异常时使用原始数据导入, no 
+            表示遇到异常时抛弃该条数据 
+            Possible Values: [YES, NO]
 
     uninstall      卸载预处理
       Usage: uninstall [options]
@@ -213,8 +239,11 @@ Usage: <main class> [options] [command] [command options]
             实现预处理的类全名,可以填写多个类名(以逗号隔开)
           -i, --id
             预处理 id 列表, 多个 id 请以逗号隔开
-          -j, --with_jar
-            并且删除之前上传 JAR 包
+          -a, --all
+            清除之前所有的预处理
+            Default: false
+          --with-extractor-stop
+            在卸载预处理模块后，不自动启动 Extractor
             Default: false
 ```
 
@@ -250,7 +279,7 @@ spadmin preprocessor \
 spadmin preprocessor \
     install \
     --path preprocessor_jar_dir/ \
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2 
+    --class cn.sensorsdata.sample.SampleExtProcessor,cn.sensorsdata.sample.SampleExtProcessor2 
 ```
 
 * 每次上传会将之前上传的所有的 JAR 包清理掉，因此如果有多个 JAR 包需要上传，请将这些 JAR 包放到一个目录里，通过指定目录将他们上传
@@ -268,10 +297,13 @@ spadmin preprocessor info
 输出的日志的关键部分如下：
 
 ```
-18/11/19 16:35:44 main INFO utils.PreProcessorTools:
+2019-06-13 15:04:45 INFO PreProcessorTool: PreProcessorTool started.
+2019-06-13 15:04:52 INFO PreProcessorTool: -----All PreProcessors are as follow-----
+2019-06-13 15:04:52 INFO PreProcessorTool: 
 {"id":1,"class_name":"cn.sensorsdata.sample.SampleExtProcessor","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":1}
 {"id":2,"class_name":"cn.sensorsdata.sample.SampleExtProcessor2","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":2}
-18/11/19 16:35:44 main INFO utils.PreProcessorTools: Preprocessor id list: [1,2]
+2019-06-13 15:04:52 INFO PreProcessorTool: PreProcessor id list(order by process order): [2]
+2019-06-13 15:04:52 INFO PreProcessorTool: -----------------------------------------
 ```
 
 在日志中，每一行日志的 JSON 对象都表示一个预处理模块的配置，其中
@@ -318,6 +350,14 @@ spadmin preprocessor info
      ```
 
      修改之后，数据会先通过 id 为 2 的预处理模块处理之后，才由 id 为 2 的预处理模块儿处理。
+
+*   如果要更新预处理模块的 JAR 包是，可以直接上传新的 JAR 包
+
+    ```
+     spadmin preprocessor \
+         modify \
+         --path preprocessor_jar_dir/
+    ```
 
 
 
