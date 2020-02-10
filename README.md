@@ -76,6 +76,11 @@ public interface RecordHandler {
 
   /**
    * @return 发送数据中的项目名，没有数据则为 null
+   * 需要注意的是，这里获取的项目名称，并不一定是最终的项目。
+   * 神策内部判断某条数据项目的逻辑为：
+   * 1. 判断数据的 json 中是否有 project 字段，如果有则使用该字段
+   * 2. 当数据中获取不到时，则使用该字段返回的项目名，也就是数据接收地址的项目名称
+   * 3. 如果上述都没有，则使用 default 项目
    */
   String getNginxLogProject();
 
