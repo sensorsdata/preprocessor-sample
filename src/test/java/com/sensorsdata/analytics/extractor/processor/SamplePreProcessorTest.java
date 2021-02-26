@@ -74,7 +74,7 @@ public class SamplePreProcessorTest {
   @Test public void testForSecondProcessor() throws Exception {
     List<RecordHandler> recordHandler = getInputHandler();
     SamplePreProcessor samplePreProcessor = new SamplePreProcessor();
-    SamplePreprocessor2 samplePreprocessor2 = new SamplePreprocessor2();
+    SamplePreProcessor2 samplePreprocessor2 = new SamplePreProcessor2();
     samplePreProcessor.process(recordHandler);
     samplePreprocessor2.process(recordHandler);
     String result = recordHandler.get(0).getOriginalData();

@@ -260,7 +260,7 @@ Usage: <main class> [options] [command] [command options]
 spadmin preprocessor \
 	run \
     --path preprocessor_jar_dir/
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 ### 4.2 以线上实时数据测试运行
@@ -271,7 +271,7 @@ spadmin preprocessor \
 spadmin preprocessor \
 	run_with_real_time_data \
     --path preprocessor_jar_dir/
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 ## 5.安装
@@ -284,7 +284,7 @@ spadmin preprocessor \
 spadmin preprocessor \
     install \
     --path preprocessor_jar_dir/ \
-    --class cn.sensorsdata.sample.SampleExtProcessor,cn.sensorsdata.sample.SampleExtProcessor2 
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2 
 ```
 
 * 每次上传会将之前上传的所有的 JAR 包清理掉，因此如果有多个 JAR 包需要上传，请将这些 JAR 包放到一个目录里，通过指定目录将他们上传
@@ -305,8 +305,8 @@ spadmin preprocessor info
 2019-06-13 15:04:45 INFO PreProcessorTool: PreProcessorTool started.
 2019-06-13 15:04:52 INFO PreProcessorTool: -----All PreProcessors are as follow-----
 2019-06-13 15:04:52 INFO PreProcessorTool: 
-{"id":1,"class_name":"cn.sensorsdata.sample.SampleExtProcessor","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":1}
-{"id":2,"class_name":"cn.sensorsdata.sample.SampleExtProcessor2","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":2}
+{"id":1,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":1}
+{"id":2,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":2}
 2019-06-13 15:04:52 INFO PreProcessorTool: PreProcessor id list(order by process order): [2]
 2019-06-13 15:04:52 INFO PreProcessorTool: -----------------------------------------
 ```
@@ -382,7 +382,7 @@ spadmin preprocessor info
 ```
 spadmin preprocessor \
     uninstall \
-    --class cn.sensorsdata.sample.SampleExtProcessor, cn.sensorsdata.sample.SampleExtProcessor2
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 -   若希望更新 JAR 包，请直接使用工具“安装”新的 JAR 包即可，不需要先进行卸载;

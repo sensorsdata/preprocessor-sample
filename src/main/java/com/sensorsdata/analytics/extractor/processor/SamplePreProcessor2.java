@@ -17,8 +17,8 @@ import java.util.List;
  * @suggest 我们建议，尽可能少的创建预处理模块以提升整体处理效率
  * @since 2018/11/20
  */
-public class SamplePreprocessor2 implements BatchProcessor {
-  private static final Logger logger = LoggerFactory.getLogger(SamplePreprocessor2.class);
+public class SamplePreProcessor2 implements BatchProcessor {
+  private static final Logger logger = LoggerFactory.getLogger(SamplePreProcessor2.class);
 
   public void process(List<RecordHandler> recordHandlerList) {
     for (RecordHandler recordHandler : recordHandlerList) {
