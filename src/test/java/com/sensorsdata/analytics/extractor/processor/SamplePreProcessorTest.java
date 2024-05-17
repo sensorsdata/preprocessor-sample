@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,70 +17,77 @@ import java.util.List;
  * @since 2018/11/20
  */
 public class SamplePreProcessorTest {
+  private static List<String> sendData = new ArrayList<>();
 
-  private List<RecordHandler> getInputHandler() {
-    RecordHandler recordHandler = new RecordHandler() {
-      String record =
-          "{\"distinct_id\":\"2b0a6f51a3cd6775\",\"time\":1434556935000,\"type\":\"track\",\"event\":\"ViewProduct\",\"properties\":{\"product_name\":\"苹果\"}}";
 
-      @Override public String getOriginalData() {
-        return record;
-      }
+  static class RecordHandlerTest implements  RecordHandler{
+    private String record;
+    public RecordHandlerTest(String record) {
+      this.record = record;
+    }
 
-      @Override public void send() {
+    @Override public String getOriginalData() {
+      return record;
+    }
 
-      }
+    @Override public void send() {
+      sendData.add(record);
+    }
 
-      @Override public void send(String data) {
-        record = data;
-      }
+    @Override public void send(String data) {
+      record = data;
+      send();
+    }
 
-      @Override public String getNginxLogProject() {
-        return null;
-      }
+    @Override public String getNginxLogProject() {
+      return null;
+    }
 
-      @Override public String getNginxUserAgent() {
-        return null;
-      }
+    @Override public String getNginxUserAgent() {
+      return null;
+    }
 
-      @Override public String getNginxLogIp() {
-        return null;
-      }
+    @Override public String getNginxLogIp() {
+      return null;
+    }
 
-      @Override public long getNginxLogTime() {
-        return 0;
-      }
+    @Override public long getNginxLogTime() {
+      return 0;
+    }
 
-      @Override public String getNginxLogCookie() {
-        return null;
-      }
+    @Override public String getNginxLogCookie() {
+      return null;
+    }
 
-      @Override public String getImportToken() {
-        return null;
-      }
-    };
-    return Collections.singletonList(recordHandler);
+    @Override public String getImportToken() {
+      return null;
+    }
   }
+  @Test
+  public void test() {
+    String record1 =
+      "{\"distinct_id\":\"2b0a6f51a3cd6775\",\"time\":1434556935000,\"type\":\"track\",\"event\":\"ViewProduct\",\"properties\":{\"product_name\":\"苹果\"}}";
+    // 过滤
+    String record2 =
+      "{\"lib\":{\"$lib\":\"Java\",\"$lib_method\":\"code\",\"$lib_version\":\"3.1.13\"},\"distinct_id\":\"108828724\",\"time\":1715847003996,\"type\":\"profile_set\",\"properties\":{\"$is_login_id\":true},\"recv_time\":1715847004000,\"project_id\":1,\"project\":\"default\",\"ver\":2}";
+    String record3 =
+      "{\"lib\":{\"$lib\":\"Java\",\"$lib_method\":\"code\",\"$lib_version\":\"3.1.12\"},\"distinct_id\":\"108828724\",\"time\":1715847003996,\"type\":\"profile_set\",\"properties\":{\"$is_login_id\":true},\"recv_time\":1715847004000,\"project_id\":1,\"project\":\"default\",\"ver\":2}";
+    String record4 =
+      "{\"lib\":{\"$lib\":\"Java\",\"$lib_method\":\"code\",\"$lib_version\":\"3.1.12\"},\"distinct_id\":\"108828724\",\"time\":1715847003996,\"type\":\"profile_set\",\"properties\":{},\"recv_time\":1715847004000,\"project_id\":1,\"project\":\"default\",\"ver\":2}";
+    String record5 =
+      "{\"lib\":{\"$lib\":\"Java\",\"$lib_method\":\"code\",\"$lib_version\":\"3.1.12\"},\"distinct_id\":\"108828724\",\"time\":1715847003996,\"type\":\"profile_set\",\"recv_time\":1715847004000,\"project_id\":1,\"project\":\"default\",\"ver\":2}";
 
-  @Test public void testForFirstProcessor() throws IOException {
-    List<RecordHandler> recordHandler = getInputHandler();
-    SamplePreProcessor samplePreProcessor = new SamplePreProcessor();
-    samplePreProcessor.process(recordHandler);
-    String result = recordHandler.get(0).getOriginalData();
-    ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode jsonNode = objectMapper.readTree(result);
-    Assert.assertEquals("水果", jsonNode.get("properties").get("product_classify").asText());
-  }
 
-  @Test public void testForSecondProcessor() throws Exception {
-    List<RecordHandler> recordHandler = getInputHandler();
     SamplePreProcessor samplePreProcessor = new SamplePreProcessor();
-    SamplePreProcessor2 samplePreprocessor2 = new SamplePreProcessor2();
-    samplePreProcessor.process(recordHandler);
-    samplePreprocessor2.process(recordHandler);
-    String result = recordHandler.get(0).getOriginalData();
-    ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode jsonNode = objectMapper.readTree(result);
-    Assert.assertEquals("吃的", jsonNode.get("properties").get("product_type").asText());
+    List<RecordHandler> recordHandlerList = new ArrayList<>();
+    recordHandlerList.add(new RecordHandlerTest(record1));
+    recordHandlerList.add(new RecordHandlerTest(record2));
+    recordHandlerList.add(new RecordHandlerTest(record3));
+    recordHandlerList.add(new RecordHandlerTest(record4));
+    recordHandlerList.add(new RecordHandlerTest(record5));
+
+    samplePreProcessor.process(recordHandlerList);
+    System.out.println(sendData);
+    assert sendData.size() == 4;
   }
 }
