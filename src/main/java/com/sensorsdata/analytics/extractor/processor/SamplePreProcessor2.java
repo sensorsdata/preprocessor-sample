@@ -24,7 +24,7 @@ public class SamplePreProcessor2 implements BatchProcessor {
     for (RecordHandler recordHandler : recordHandlerList) {
       /*
        这里获取的 originalData 是一条符合 Sensors Analytics 数据格式定义的 Json
-       数据格式定义 https://www.sensorsdata.cn/manual/data_schema.html
+       数据格式定义 https://manual.sensorsdata.cn/sa/latest/zh_cn/%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F-185863996.html
        */
       String originalData = recordHandler.getOriginalData();
 
@@ -65,7 +65,7 @@ public class SamplePreProcessor2 implements BatchProcessor {
         String productName = propertiesNode.get("product_classify").asText();
         if ("水果".equals(productName)) {
           propertiesNode.put("product_type", "吃的");
-          // 输出日志到 /data/sa_cluster/logs/extractor 下的 extractor.log 中
+          // 输出日志到所在模块的日志文件中（老架构且 sdg 未开干路化是 extractor，其他场景是 processorchain）
           logger.info("Find a eatable thing: {}", productName);
         } else if ("饮料".equals(productName)) {
           propertiesNode.put("product_type", "喝的");
