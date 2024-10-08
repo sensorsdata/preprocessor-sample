@@ -1,8 +1,8 @@
-# SDH 架构（分析云 3.0.0 及以上套餐）的 PreProcessor 预处理模块
+# 老架构（分析云 3.0.0 以下套餐或非套餐）的 PreProcessor 预处理模块
 
 ## 1.概述
 
-如果是老架构（分析云 3.0.0 以下套餐或非套餐），请参考文档 [老架构预处理文档](https://github.com/sensorsdata/preprocessor-sample/blob/master/doc/preprocessor_sdg_sdf.md)，新老架构下的预处理核心逻辑其实是一样的，只有部分命令参数有变化，为了能让文档更简洁直观，分为了两个独立的文档。
+如果是 SDH 架构（分析云 3.0.0 及以上套餐），请参考文档 [SDH 架构预处理文档](https://github.com/sensorsdata/preprocessor-sample)，新老架构下的预处理核心逻辑其实是一样的，只有部分命令参数有变化，为了能让文档更简洁直观，分为了两个独立的文档。
 
 Sensors Analytics 从 1.14 开始为用户提供新版本的"数据预处理模块"（之后简称为预处理模块），即为 SDK 等方式接入的数据（不包括批量导入工具方式）提供一个简单的 ETL 流程，使数据接入更加灵活。
 
@@ -48,7 +48,7 @@ Sensors Analytics 从 1.14 开始为用户提供新版本的"数据预处理模�
 
 ## 2.开发方法
 
-SDH 架构的预处理不再兼容旧版预处理，如果您目前使用的旧版需要先升级，可以参考 [旧版预处理升级指南](https://github.com/sensorsdata/preprocessor-sample/blob/master/doc/PreviousUserGuidance.md)
+如果您是由 1.13 迁移过来的，可以参考。[旧版预处理升级指南](https://github.com/sensorsdata/preprocessor-sample/blob/master/doc/PreviousUserGuidance.md)
 
 相比之前版本提供的预处理模块，新版本的预处理模块提供了批量处理的能力，并且可以支持添加多个预处理模块。因此，新版本的预处理接口相比之前较为复杂。一个预处理模块需要使用到两个 Java 接口`com.sensorsdata.analytics.extractor.common.RecordHandler`与`com.sensorsdata.analytics.extractor.processor.BatchProcessor`。这两个接口的定义如下
 
@@ -166,13 +166,10 @@ preprocessor-tools 使用用于测试、部署预处理模块的工具，只能�
 sudo su - sa_cluster
 ```
 
-* 3.0.0 套餐对应的命令是 integratoradmin preprocessor（integratoradmin preprocessor -h）
-* 3.0.1 及以上套餐对应的命令是 horizonadmin inflow preprocessor（仍然兼容 integratoradmin preprocessor）
-
 直接运行 preprocessor-tools 将输出参数列表如：
 
 ```
-[sa_cluster@sensors-server ~]$ horizonadmin inflow preprocessor -h
+[sa_cluster@sensors-server ~]$ sdfadmin preprocessor
 Usage: <main class> [options] [command] [command options]
   Options:
     -h, --help
@@ -197,8 +194,6 @@ Usage: <main class> [options] [command] [command options]
             新的预处理模块处理顺序，填写预处理模块 id 列表，以逗号隔开。请填写上所有预处理模块的 id
           -p, --path
             要更新的 JAR 包的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
-          -u, --use_url_class_loader
-            是否使用默认的 URL 类加载器去加载预处理包。默认为 false，如果预处理代码中依赖神策环境的 jar 包请设置为 true, 否则请勿指定该参数。
 
     install      安装预处理
       Usage: install [options]
@@ -211,8 +206,17 @@ Usage: <main class> [options] [command] [command options]
             当 ExtProcessor 抛异常时导入原始数据而不是直接抛弃, yes 表示预处理遇到异常时使用原始数据导入, no 
             表示遇到异常时抛弃该条数据 
             Possible Values: [YES, NO]
-          --with-integrator-stop
-            在卸载预处理模块后，不自动启动 integrator scheduler 和 integrator web (3.0.1 及以上套餐是 horizon stream_manger 和 horizon web)
+        * --add_in_track_signup
+            是否将预处理应用于 track signup 的单独处理流中. yes 表示在打开 track signup 
+            的处理流的前提下，会同时将预处理的内容也添加到 track signup 流中, no 表示在 track signup 
+            流中不进行预处理。如果您的预处理会影响到 track_signup 的结果（例如，会修改 distinct_id 
+            等），请务必打开此开关 
+            Possible Values: [YES, NO]
+          --install-old-preprocessor
+            安装旧版本的预处理
+            Default: false
+          --with-extractor-stop
+            在卸载预处理模块后，不自动启动 Extractor
             Default: false
 
     run      运行指定的预处理方法, 以标准输入的逐行数据作为参数输入, 将返回结果输出到标准输出
@@ -245,38 +249,44 @@ Usage: <main class> [options] [command] [command options]
           -a, --all
             清除之前所有的预处理
             Default: false
-          --with-integrator-stop
-            在卸载预处理模块后，不自动启动 integrator scheduler 和 integrator web (3.0.1 及以上套餐是 horizon stream_manger 和 horizon web)
+          --with-extractor-stop
+            在卸载预处理模块后，不自动启动 Extractor
             Default: false
 ```
 
 ### 4.1  测试运行
 
-使用`run`方法加在 JAR 并实例化 Class，以标准输入的逐行数据作为预处理函数的输入，并将处理结果输出到标准输出。其中 -c, --class 为可选参数，若不填写，默认使用之前通过`install`安装的所有预处理模块进行处理；否则，会使用 -c 中传输的 class list 作为预处理模块，处理顺序与填写时顺序相同（3.0.0 套餐使用命令 integratoradmin preprocessor）。
+使用`run`方法加在 JAR 并实例化 Class，以标准输入的逐行数据作为预处理函数的输入，并将处理结果输出到标准输出。其中 -c, --class 为可选参数，若不填写，默认使用之前通过`install`安装的所有预处理模块进行处理；否则，会使用 -c 中传输的 class list 作为预处理模块，处理顺序与填写时顺序相同。
 
 ```
-horizonadmin inflow preprocessor run --path preprocessor_jar_dir/ --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
-
-样例数据（老架构下的预处理是直接使用原始数据，在 SDH 架构下的预处理需要将数据包在 payload 里面）
-{"payload":{"distinct_id":"2b0a6f51a3cd6775","time":1434556935000,"type":"track","event":"ViewProduct","project": "default","ip":"123.123.123.123","properties":{"product_name":"苹果"}}}
+sdfadmin preprocessor \
+	run \
+    --path preprocessor_jar_dir/
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 ### 4.2 以线上实时数据测试运行
 
-使用方法与`run`方法相同，均需要提供 JAR 包的地址与所有需要测试的预处理的 Class。与`run`方法不同的是，`run_with_real_time_data`的输入数据真实的环境中的线上数据，并且最后会将输入与输出都输出到标准输出中（3.0.0 套餐使用命令 integratoradmin preprocessor）。
+使用方法与`run`方法相同，均需要提供 JAR 包的地址与所有需要测试的预处理的 Class。与`run`方法不同的是，`run_with_real_time_data`的输入数据真实的环境中的线上数据，并且最后会将输入与输出都输出到标准输出中。
 
 ```
-horizonadmin inflow preprocessor run_with_real_time_data --path preprocessor_jar_dir/ --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
+sdfadmin preprocessor \
+	run_with_real_time_data \
+    --path preprocessor_jar_dir/
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 ## 5.安装
 
 安装分为两步，首先需要将打包后生成的 JAR 包安装到神策服务器中，然后需要将所有编写的预处理模块 Class 名称配置存储神策服务器中。
 
-使用 preprocessor-tools 的`install`方法可以上传打包后的 JAR 包并且可以将每一个预处理模块的主类安装到神策。示例命令如下（3.0.0 套餐使用命令 integratoradmin preprocessor）：
+使用 preprocessor-tools 的`install`方法可以上传打包后的 JAR 包并且可以将每一个预处理模块的主类安装到神策。示例命令如下：
 
 ```
-horizonadmin inflow preprocessor install --path preprocessor_jar_dir/ --when_exception_use_original no --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2 
+sdfadmin preprocessor \
+    install \
+    --path preprocessor_jar_dir/ \
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2 
 ```
 
 * 每次上传会将之前上传的所有的 JAR 包清理掉，因此如果有多个 JAR 包需要上传，请将这些 JAR 包放到一个目录里，通过指定目录将他们上传
@@ -285,23 +295,22 @@ horizonadmin inflow preprocessor install --path preprocessor_jar_dir/ --when_exc
 
 ## 6. 预处理细节查看与配置修改
 
-在新的预处理模块的模式中，多个预处理模块会按照一定顺序对日志进行处理，并且每个预处理模块一次会批量处理一批数据。可以通过 preprocessor-tools 的`info`方法查看所有预处理模块的细节，可以执行如下命令（3.0.0 套餐使用命令 integratoradmin preprocessor）：
+在新的预处理模块的模式中，多个预处理模块会按照一定顺序对日志进行处理，并且每个预处理模块一次会批量处理一批数据。可以通过 preprocessor-tools 的`info`方法查看所有预处理模块的细节，可以执行如下命令：
 
 ```
-horizonadmin inflow preprocessor info
+sdfadmin preprocessor info
 ```
 
 输出的日志的关键部分如下：
 
 ```
-PreProcessorTool logger initialized.
--------------------- All PreProcessors are as follow --------------------
-all preprocessor.[content=
-{"id":1,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor","batch_process_num":30,"batch_process_timeout":1,"handle_order":1}
-{"id":2,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2","batch_process_num":30,"batch_process_timeout":1,"handle_order":2}]
-PreProcessor id list(order by process order): [1, 2]
----------------------------------------------------------------------
-2024-10-08 15:40:46,134 INFO cmd finished.
+2019-06-13 15:04:45 INFO PreProcessorTool: PreProcessorTool started.
+2019-06-13 15:04:52 INFO PreProcessorTool: -----All PreProcessors are as follow-----
+2019-06-13 15:04:52 INFO PreProcessorTool: 
+{"id":1,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":1}
+{"id":2,"class_name":"com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2","batch_process_num":30,"batch_prcess_timeout":1,"handle_order":2}
+2019-06-13 15:04:52 INFO PreProcessorTool: PreProcessor id list(order by process order): [2]
+2019-06-13 15:04:52 INFO PreProcessorTool: -----------------------------------------
 ```
 
 在日志中，每一行日志的 JSON 对象都表示一个预处理模块的配置，其中
@@ -315,14 +324,15 @@ PreProcessor id list(order by process order): [1, 2]
 
 ### 6.1 预处理配置修改
 
-修改预处理的配置时，请使用 preprocessor-tools 的 `modify`方法，具体使用命令如下（3.0.0 套餐使用命令 integratoradmin preprocessor）：
+修改预处理的配置时，请使用 preprocessor-tools 的 `modify`方法，具体使用命令如下：
 
 * 如果要修改某个预处理模块的一次处理的最大条数时：
 
     ```
-    horizonadmin inflow preprocessor modify --id 1 --amount 50
-    # 如果提示缺少参数，请使用完整参数命令
-    horizonadmin inflow preprocessor modify --id 1 --path preprocessor_jar_dir/ --timeout 1 --amount 50
+    sdfadmin preprocessor \
+        modify \
+        --id 1 \
+        --amount 50
     ```
 
     以上命令将 id 为 1 的预处理模块的一次处理的最大条数设定为了 50条。
@@ -330,9 +340,10 @@ PreProcessor id list(order by process order): [1, 2]
 *  如果要修改某一些预处理模块的最长等待时间时:
 
     ```
-    horizonadmin inflow preprocessor modify --id 1,2 --timeout 3
-    # 如果提示缺少参数，请使用完整参数命令
-    horizonadmin inflow preprocessor modify --id 1,2 --path preprocessor_jar_dir/ --amount 50 --timeout 3
+    sdfadmin preprocessor \
+        modify \
+        --id 1,2 \
+        --timeout 3
     ```
 
     以上命令将 id 为 1 与 2 的预处理模块的最长等待时间设定为了 3 秒。
@@ -340,9 +351,9 @@ PreProcessor id list(order by process order): [1, 2]
 *    如果要修改预处理模块处理属性时，直接指定新的预处理排序即可：
 
      ```
-     horizonadmin inflow preprocessor modify --order 2,1
-     # 如果提示缺少参数，请使用完整参数命令
-     horizonadmin inflow preprocessor modify --id 1,2 --timeout 1 --path preprocessor_jar_dir/ --amount 30 --order 2,1
+     sdfadmin preprocessor \
+         modify \
+         --order 2,1
      ```
 
      修改之后，数据会先通过 id 为 2 的预处理模块处理之后，才由 id 为 2 的预处理模块儿处理。
@@ -350,31 +361,40 @@ PreProcessor id list(order by process order): [1, 2]
 *   如果要更新预处理模块的 JAR 包是，可以直接上传新的 JAR 包
 
     ```
-     horizonadmin inflow preprocessor modify --path preprocessor_jar_dir/
-     # 如果提示缺少参数，请使用完整参数命令
-     horizonadmin inflow preprocessor modify --id 1,2 --timeout 1 --amount 30 --path preprocessor_jar_dir/
+     sdfadmin preprocessor \
+         modify \
+         --path preprocessor_jar_dir/
     ```
+
+
 
 
 ## 7.验证
 
 安装好预处理模块后，为了验证处理结果是否符合预期，可以开启 SDK 的 [`Debug 模式`](https://manual.sensorsdata.cn/sa/latest/zh_cn/debug-150667671.html) 校验数据。
 
-1.  使用 [Debug 实时数据查询](https://manual.sensorsdata.cn/sa/latest/zh_cn/debug-143163594.html);
+1.  使用管理员帐号登录 Sensors Analytics 界面，点击左下角 `埋点`，在新页面中点击右上角 `数据接入辅助工具`，在新页面中点击最上面导航栏中的 `DEBUG数据查看`;
 2.  配置 SDK 使用 [`Debug 模式`](https://manual.sensorsdata.cn/sa/latest/zh_cn/debug-150667671.html);
 3.  发送一条测试用的数据，观察是否进行了预期处理即可;
 
 ## 8. 卸载
 
-若不再需要预处理模块，可以通过 preprocessor-tools 的 `uninstall` 方法卸载，执行如下命令（3.0.0 套餐使用命令 integratoradmin preprocessor）：
+若不再需要预处理模块，可以通过 ext-processor-utils 的 `uninstall` 方法卸载，执行如下命令：
 
 ```
-horizonadmin inflow preprocessor uninstall --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor,com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
+sdfadmin preprocessor \
+    uninstall \
+    --class com.sensorsdata.analytics.extractor.processor.SamplePreProcessor, com.sensorsdata.analytics.extractor.processor.SamplePreProcessor2
 ```
 
 -   若希望更新 JAR 包，请直接使用工具“安装”新的 JAR 包即可，不需要先进行卸载;
 
-如果想要清除之前所有的预处理，可以执行如下命令:
+如果想要清空之前上传的 JAR 包，可以执行如下命令:
 ```
-horizonadmin inflow preprocessor uninstall --all
+sdfadmin preprocessor \
+    uninstall \
+    --with_jar
 ```
+
+## 链接
+[旧版预处理详细文档](https://github.com/sensorsdata/ext-processor-sample)
