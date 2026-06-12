@@ -154,6 +154,51 @@ mvn clean package
 
 执行编译后可在 `target` 目录下找到 `preprocessor-sample-1.0-SNAPSHOT.jar`。
 
+### 3.1 依赖管理与冲突规避
+
+预处理 JAR 会与宿主程序运行在同一个 JVM 进程中。如果预处理程序额外引入了第三方依赖，尤其是 Guava、Jackson 这类在不同版本之间较容易出现兼容性问题的库，就有可能与宿主程序已有依赖发生冲突，进而出现 `NoSuchMethodError`、`ClassCastException`、序列化/反序列化异常等问题。
+
+因此，依赖管理建议按以下原则处理：
+
+* 如果预处理只是使用神策环境中已经提供的依赖，并且确认版本完全兼容，可以直接复用宿主依赖。
+* 如果预处理需要自行引入第三方依赖，推荐在打包时使用 `maven-shade-plugin`，并对高风险依赖启用 `relocation` 做包名重写，而不只是简单打成 fat jar。
+* 对于 Guava、Jackson、Apache Commons 等通用基础库，推荐默认按“需要 relocation”的依赖处理，避免与宿主程序类路径中的同名类互相覆盖。
+
+需要特别说明的是：仅仅使用 shade 将依赖打入最终 JAR，并不能彻底避免冲突；只有开启 `relocation` 后，把例如 `com.google.common`、`com.fasterxml` 这类包重写到预处理自己的命名空间下，才能真正做到类隔离。
+
+本 repo 当前已经启用了 `maven-shade-plugin`。如果您新增了容易冲突的依赖，建议进一步补充类似下面的配置：
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-shade-plugin</artifactId>
+    <version>2.4.3</version>
+    <executions>
+        <execution>
+            <phase>package</phase>
+            <goals>
+                <goal>shade</goal>
+            </goals>
+            <configuration>
+                <createDependencyReducedPom>false</createDependencyReducedPom>
+                <relocations>
+                    <relocation>
+                        <pattern>com.google.common</pattern>
+                        <shadedPattern>your.preprocessor.shaded.com.google.common</shadedPattern>
+                    </relocation>
+                    <relocation>
+                        <pattern>com.fasterxml</pattern>
+                        <shadedPattern>your.preprocessor.shaded.com.fasterxml</shadedPattern>
+                    </relocation>
+                </relocations>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+其中 `your.preprocessor.shaded` 只是示例前缀，请替换为您自己的包名前缀。更多说明可参考 [如何避免预处理的依赖冲突](doc/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E9%A2%84%E5%A4%84%E7%90%86%E4%BE%9D%E8%B5%96%E5%86%B2%E7%AA%81.md)。
+
 ## 4. 测试 JAR
 
 preprocessor-tools 使用用于测试、部署预处理模块的工具，只能运行于部署 Sensors Analytics 的机器上。
@@ -208,8 +253,8 @@ Usage: <main class> [options] [command] [command options]
         * -p, --path
             要上传 JAR 的位置，可以是文件也可以是目录，但会覆盖之前传输的，所以请全量上传
         * --when_exception_use_original
-            当 ExtProcessor 抛异常时导入原始数据而不是直接抛弃, yes 表示预处理遇到异常时使用原始数据导入, no 
-            表示遇到异常时抛弃该条数据 
+            当 BatchProcessor 抛异常时导入原始数据而不是直接报错, yes 表示预处理遇到异常时使用原始数据导入, no 
+            表示遇到异常时报错 
             Possible Values: [YES, NO]
           --with-integrator-stop
             在卸载预处理模块后，不自动启动 integrator scheduler 和 integrator web (3.0.1 及以上套餐是 horizon stream_manger 和 horizon web)
@@ -231,8 +276,8 @@ Usage: <main class> [options] [command] [command options]
           -c, --class
             实现预处理的类全名,可以填写多个类名(以逗号隔开),若不填写，则使用已经安装神策的预处理类
         * --when_exception_use_original
-            当 ExtProcessor 抛异常时导入原始数据而不是直接抛弃, yes 表示预处理遇到异常时使用原始数据导入, no 
-            表示遇到异常时抛弃该条数据 
+            当 BatchProcessor 抛异常时导入原始数据而不是直接报错, yes 表示预处理遇到异常时使用原始数据导入, no 
+            表示遇到异常时报错 
             Possible Values: [YES, NO]
 
     uninstall      卸载预处理
