@@ -140,6 +140,28 @@ public interface BatchProcessor {
     * 当希望将处理完后的数据交给下一个预处理或者交由神策处理时，可以通过调用`com.sensorsdata.analytics.extractor.common.RecordHandler#send(java.lang.String)`实现，如果需要有一条数据产生多条数据时，则调用多次；如果需要抛掉该条数据，则不用进行调用。
     
     * 由于处理的过程中是批量处理，如果在处理的过程中，抛出了异常，会导致之后数据都被抛出。因此，建议保证程序的正确性。
+
+### 2.1 注意
+如果在预处理中修改了用户关联字段值，如果 identities 存在，务必同步修改；比如 login_id 需要解密，请同时解密 identities.$identity_login_id
+
+| 用户标识属性       | 对应的 identities 属性      |
+| ------------ | ---------------------- |
+| login_id     | $identity_login_id     |
+| anonymous_id | $identity_anonymous_id |
+
+数据样例如下：
+```
+{
+    "distinct_id": "d1",
+    "login_id": "l1",
+    "anonymous_id": "a1",
+    "identities": {
+        "$identity_login_id": "l1",
+        "$identity_anonymous_id": "a1"
+    }
+}
+```
+
 ## 3. 编译打包
 
 我们需要将编写好预处理模块打包安装到神策的环境中
