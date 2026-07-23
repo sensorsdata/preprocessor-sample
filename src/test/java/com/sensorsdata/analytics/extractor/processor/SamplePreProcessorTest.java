@@ -82,4 +82,62 @@ public class SamplePreProcessorTest {
     JsonNode jsonNode = objectMapper.readTree(result);
     Assert.assertEquals("吃的", jsonNode.get("properties").get("product_type").asText());
   }
+
+  @Test public void shouldPreferProjectFromData() throws Exception {
+    JsonNode data = new ObjectMapper().readTree("{\"project\":\"  data-project  \"}");
+
+    Assert.assertEquals("data-project",
+        SamplePreProcessor.resolveProjectName(data, projectHandler("nginx-project")));
+  }
+
+  @Test public void shouldUseNginxProjectWhenDataDoesNotSpecifyProject() throws Exception {
+    JsonNode data = new ObjectMapper().readTree("{}");
+
+    Assert.assertEquals("nginx-project",
+        SamplePreProcessor.resolveProjectName(data, projectHandler("nginx-project")));
+  }
+
+  @Test public void shouldUseDefaultProjectWhenNoProjectIsSpecified() throws Exception {
+    JsonNode data = new ObjectMapper().readTree("{}");
+
+    Assert.assertEquals("default", SamplePreProcessor.resolveProjectName(data, projectHandler(null)));
+  }
+
+  private RecordHandler projectHandler(final String nginxProject) {
+    return new RecordHandler() {
+      @Override public String getOriginalData() {
+        return "{}";
+      }
+
+      @Override public void send() {
+      }
+
+      @Override public void send(String data) {
+      }
+
+      @Override public String getNginxLogProject() {
+        return nginxProject;
+      }
+
+      @Override public String getNginxUserAgent() {
+        return null;
+      }
+
+      @Override public String getNginxLogIp() {
+        return null;
+      }
+
+      @Override public long getNginxLogTime() {
+        return 0;
+      }
+
+      @Override public String getNginxLogCookie() {
+        return null;
+      }
+
+      @Override public String getImportToken() {
+        return null;
+      }
+    };
+  }
 }
