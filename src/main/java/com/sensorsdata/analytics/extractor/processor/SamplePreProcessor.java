@@ -18,6 +18,7 @@ import java.util.List;
 public class SamplePreProcessor implements BatchProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(SamplePreProcessor.class);
+  private static final String DEFAULT_PROJECT_NAME = "default";
 
   public void process(List<RecordHandler> recordHandlerList) {
     for (RecordHandler recordHandler : recordHandlerList) {
@@ -59,6 +60,15 @@ public class SamplePreProcessor implements BatchProcessor {
       }
       ObjectNode propertiesNode = (ObjectNode) recordNode.get("properties");
 
+      /*
+       * 获取实际生效的项目名：
+       * 1. 优先使用数据 Json 中的 project 字段；
+       * 2. 数据未指定时，使用数据接收地址中的项目名；
+       * 3. 都未指定时，使用 default 项目。
+       */
+      String projectName = resolveProjectName(recordNode, recordHandler);
+      logger.info("Resolved effective project name: {}", projectName);
+
       if (propertiesNode != null && propertiesNode.has("product_name")) {
         String productName = propertiesNode.get("product_name").asText();
         if ("苹果".equals(productName) || "梨".equals(productName)) {
@@ -74,5 +84,14 @@ public class SamplePreProcessor implements BatchProcessor {
        */
       recordHandler.send(recordNode.toString());
     }
+  }
+
+  static String resolveProjectName(JsonNode recordNode, RecordHandler recordHandler) {
+    if (recordNode.has("project")) {
+      return recordNode.get("project").asText().trim();
+    }
+
+    String nginxProject = recordHandler.getNginxLogProject();
+    return nginxProject == null ? DEFAULT_PROJECT_NAME : nginxProject;
   }
 }
