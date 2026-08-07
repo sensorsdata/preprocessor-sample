@@ -141,6 +141,8 @@ public interface BatchProcessor {
     
     * 由于处理的过程中是批量处理，如果在处理的过程中，抛出了异常，会导致之后数据都被抛出。因此，建议保证程序的正确性。
 
+    * 如果预处理逻辑需要按项目区分处理，请不要直接把 `RecordHandler#getNginxLogProject()` 当作最终项目名；应参考下文「如何正确获取实际生效的项目名」。
+
 ### 2.1 注意
 如果在预处理中修改了用户关联字段值，如果 identities 存在，务必同步修改；比如 login_id 需要解密，请同时解密 identities.$identity_login_id
 
@@ -159,6 +161,39 @@ public interface BatchProcessor {
         "$identity_login_id": "l1",
         "$identity_anonymous_id": "a1"
     }
+}
+```
+
+### 2.2 如何正确获取实际生效的项目名
+
+`RecordHandler#getNginxLogProject()` 返回的是数据接收地址中的项目名，**并不一定是最终实际生效的项目名**。
+
+神策内部判断某条数据所属项目的逻辑为：
+
+1. 优先使用数据 Json 中的 `project` 字段；
+2. 数据未指定时，使用数据接收地址中的项目名（即 `getNginxLogProject()` 的返回值）；
+3. 都未指定时，使用 `default` 项目。
+
+因此，如果预处理需要按项目做分支处理，请按上述优先级自行解析“实际生效的项目名”，而不是只调用 `getNginxLogProject()`。
+
+本 repo 的样例代码 `SamplePreProcessor` 中已提供参考实现 `resolveProjectName`，核心逻辑如下：
+
+```java
+/*
+ * 获取实际生效的项目名：
+ * 1. 优先使用数据 Json 中的 project 字段；
+ * 2. 数据未指定时，使用数据接收地址中的项目名；
+ * 3. 都未指定时，使用 default 项目。
+ */
+String projectName = resolveProjectName(recordNode, recordHandler);
+
+static String resolveProjectName(JsonNode recordNode, RecordHandler recordHandler) {
+  if (recordNode.has("project")) {
+    return recordNode.get("project").asText().trim();
+  }
+
+  String nginxProject = recordHandler.getNginxLogProject();
+  return nginxProject == null ? "default" : nginxProject;
 }
 ```
 
